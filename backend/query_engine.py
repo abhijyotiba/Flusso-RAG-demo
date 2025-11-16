@@ -41,7 +41,7 @@ class FlussoQueryEngine:
         # Initialize Gemini client with new SDK
         try:
             self.client = genai.Client(api_key=api_key)
-            logger.info("✓ Gemini client initialized successfully with new SDK")
+            logger.info("✓ Gemini client initialized successfully")
         except Exception as e:
             logger.error(f"Failed to initialize Gemini client: {e}")
             raise
@@ -123,7 +123,7 @@ class FlussoQueryEngine:
 
 User Query: {user_query}"""
             
-            # Use File Search with the new SDK (matching reference code pattern)
+            # Generate response using File Search (following official documentation pattern)
             response = self.client.models.generate_content(
                 model=self.model_name,
                 contents=full_prompt,
@@ -141,7 +141,7 @@ User Query: {user_query}"""
             # Extract answer text
             answer = response.text if response.text else "No response generated"
             
-            # Extract sources from grounding metadata (matching reference code)
+            # Extract sources from grounding metadata
             sources = []
             grounding_metadata = None
             
@@ -155,11 +155,10 @@ User Query: {user_query}"""
                     for chunk in grounding_metadata.grounding_chunks:
                         if hasattr(chunk, 'retrieved_context'):
                             source_title = chunk.retrieved_context.title
-                            source_uri = getattr(chunk.retrieved_context, 'uri', None)
                             if source_title and source_title not in seen_sources:
                                 sources.append({
                                     'title': source_title,
-                                    'uri': source_uri
+                                    'uri': getattr(chunk.retrieved_context, 'uri', None)
                                 })
                                 seen_sources.add(source_title)
             
