@@ -6,14 +6,8 @@ import os
 import logging
 from typing import Dict, List, Optional
 
-# Try to import the new SDK first, then fall back to old SDK
-try:
-    from google import genai
-    from google.genai import types
-    USE_NEW_SDK = True
-except (ImportError, AttributeError):
-    import google.generativeai as genai_old
-    USE_NEW_SDK = False
+from google import genai
+from google.genai import types
 
 # Configure logging
 logging.basicConfig(
@@ -44,16 +38,10 @@ class FlussoQueryEngine:
         self.api_key = api_key
         self.store_id = store_id
         
-        # Initialize Gemini client based on SDK version
+        # Initialize Gemini client with new SDK
         try:
-            if USE_NEW_SDK:
-                self.client = genai.Client(api_key=api_key)
-                logger.info("✓ Using new Gemini SDK")
-            else:
-                genai_old.configure(api_key=api_key)
-                self.client = None  # Old SDK doesn't use client
-                logger.info("✓ Using legacy Gemini SDK")
-            logger.info("✓ Gemini client initialized successfully")
+            self.client = genai.Client(api_key=api_key)
+            logger.info("✓ Gemini client initialized successfully with new SDK")
         except Exception as e:
             logger.error(f"Failed to initialize Gemini client: {e}")
             raise
@@ -66,7 +54,6 @@ class FlussoQueryEngine:
         logger.info(f"✓ Query engine initialized")
         logger.info(f"  Model: {self.model_name}")
         logger.info(f"  Store ID: {self.store_id}")
-        logger.info(f"  SDK Version: {'New' if USE_NEW_SDK else 'Legacy'}")
     
     def _build_system_instruction(self) -> str:
         """Build comprehensive system instruction for the AI"""
@@ -136,77 +123,45 @@ class FlussoQueryEngine:
 
 User Query: {user_query}"""
             
-            if USE_NEW_SDK:
-                # New SDK with File Search
-                from google.genai import types
-                response = self.client.models.generate_content(
-                    model=self.model_name,
-                    contents=full_prompt,
-                    config=types.GenerateContentConfig(
-                        tools=[types.Tool(
-                            file_search=types.FileSearch(
-                                file_search_store_names=[self.store_id]
-                            )
-                        )],
-                        temperature=temp,
-                        top_p=top_p_val,
-                    )
+            # Use File Search with the new SDK (matching reference code pattern)
+            response = self.client.models.generate_content(
+                model=self.model_name,
+                contents=full_prompt,
+                config=types.GenerateContentConfig(
+                    tools=[types.Tool(
+                        file_search=types.FileSearch(
+                            file_search_store_names=[self.store_id]
+                        )
+                    )],
+                    temperature=temp,
+                    top_p=top_p_val,
                 )
-            else:
-                # Legacy SDK - basic generation without file search
-                logger.warning("Using legacy SDK - File Search not available, using basic generation")
-                model = genai_old.GenerativeModel(self.model_name)
-                response = model.generate_content(
-                    full_prompt,
-                    generation_config={
-                        'temperature': temp,
-                        'top_p': top_p_val,
-                    }
-                )
+            )
             
             # Extract answer text
             answer = response.text if response.text else "No response generated"
             
-            # Extract sources from grounding metadata
+            # Extract sources from grounding metadata (matching reference code)
             sources = []
             grounding_metadata = None
             
-            if USE_NEW_SDK:
-                # New SDK grounding metadata extraction
-                if response.candidates and len(response.candidates) > 0:
-                    candidate = response.candidates[0]
-                    grounding_metadata = candidate.grounding_metadata
-                    
-                    if grounding_metadata and grounding_metadata.grounding_chunks:
-                        # Extract unique source titles
-                        seen_sources = set()
-                        for chunk in grounding_metadata.grounding_chunks:
-                            if hasattr(chunk, 'retrieved_context'):
-                                source_title = chunk.retrieved_context.title
-                                source_uri = getattr(chunk.retrieved_context, 'uri', None)
-                                if source_title and source_title not in seen_sources:
-                                    sources.append({
-                                        'title': source_title,
-                                        'uri': source_uri
-                                    })
-                                    seen_sources.add(source_title)
-            else:
-                # Legacy SDK - try to extract grounding if available
-                if hasattr(response, 'candidates') and response.candidates:
-                    candidate = response.candidates[0]
-                    if hasattr(candidate, 'grounding_metadata'):
-                        grounding_metadata = candidate.grounding_metadata
-                        if hasattr(grounding_metadata, 'grounding_chunks'):
-                            seen_sources = set()
-                            for chunk in grounding_metadata.grounding_chunks:
-                                if hasattr(chunk, 'retrieved_context'):
-                                    source_title = chunk.retrieved_context.title
-                                    if source_title and source_title not in seen_sources:
-                                        sources.append({
-                                            'title': source_title,
-                                            'uri': None
-                                        })
-                                        seen_sources.add(source_title)
+            if response.candidates and len(response.candidates) > 0:
+                candidate = response.candidates[0]
+                grounding_metadata = candidate.grounding_metadata
+                
+                if grounding_metadata and grounding_metadata.grounding_chunks:
+                    # Extract unique source titles
+                    seen_sources = set()
+                    for chunk in grounding_metadata.grounding_chunks:
+                        if hasattr(chunk, 'retrieved_context'):
+                            source_title = chunk.retrieved_context.title
+                            source_uri = getattr(chunk.retrieved_context, 'uri', None)
+                            if source_title and source_title not in seen_sources:
+                                sources.append({
+                                    'title': source_title,
+                                    'uri': source_uri
+                                })
+                                seen_sources.add(source_title)
             
             logger.info(f"✓ Query processed successfully, {len(sources)} sources found")
             
