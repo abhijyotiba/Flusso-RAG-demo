@@ -1,7 +1,7 @@
 # Flusso RAG Demo - Requirements
 
-# Core Dependencies - Use the NEW Google GenAI SDK
-google-genai==0.3.0
+# Core Dependencies - Use Google GenAI SDK version that supports FileSearch
+google-genai==1.50.0
 
 # Web Framework
 flask==3.0.0

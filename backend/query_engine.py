@@ -1,11 +1,6 @@
-"""
-RAG Query Engine for Flusso Knowledge Base
-Handles queries to Gemini API using File Search with the knowledge base store
-"""
 import os
 import logging
 from typing import Dict, List, Optional
-
 from google import genai
 from google.genai import types
 
@@ -38,7 +33,7 @@ class FlussoQueryEngine:
         self.api_key = api_key
         self.store_id = store_id
         
-        # Initialize Gemini client with new SDK
+        # Initialize Gemini client
         try:
             self.client = genai.Client(api_key=api_key)
             logger.info("✓ Gemini client initialized successfully")
@@ -123,20 +118,19 @@ class FlussoQueryEngine:
 
 User Query: {user_query}"""
             
-            # Generate response using File Search
-            # Using dictionary syntax for compatibility with google-genai 0.3.0
+            # Generate response using File Search (following official documentation pattern)
             response = self.client.models.generate_content(
                 model=self.model_name,
                 contents=full_prompt,
-                config={
-                    'tools': [{
-                        'file_search': {
-                            'file_search_store_names': [self.store_id]
-                        }
-                    }],
-                    'temperature': temp,
-                    'top_p': top_p_val,
-                }
+                config=types.GenerateContentConfig(
+                    tools=[types.Tool(
+                        file_search=types.FileSearch(
+                            file_search_store_names=[self.store_id]
+                        )
+                    )],
+                    temperature=temp,
+                    top_p=top_p_val,
+                )
             )
             
             # Extract answer text
