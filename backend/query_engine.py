@@ -118,6 +118,10 @@ class FlussoQueryEngine:
 
 User Query: {user_query}"""
             
+            # Log the request start time for monitoring
+            import time
+            start_time = time.time()
+            
             # Generate response using File Search (following official documentation pattern)
             response = self.client.models.generate_content(
                 model=self.model_name,
@@ -132,6 +136,10 @@ User Query: {user_query}"""
                     top_p=top_p_val,
                 )
             )
+            
+            # Log response time
+            elapsed_time = time.time() - start_time
+            logger.info(f"Gemini API response received in {elapsed_time:.2f}s")
             
             # Extract answer text
             answer = response.text if response.text else "No response generated"

@@ -31,13 +31,12 @@ if not STORE_ID:
     raise ValueError("STORE_ID environment variable is required")
 
 # Initialize query engine
-query_engine = None
 try:
     query_engine = FlussoQueryEngine(api_key=API_KEY, store_id=STORE_ID)
     logger.info("✓ Flask app initialized with query engine")
 except Exception as e:
     logger.error(f"Failed to initialize query engine: {e}")
-    logger.error("API will return errors until this is fixed")
+    raise RuntimeError(f"Cannot start application: Query engine initialization failed - {e}")
 
 
 # ============================================================================
