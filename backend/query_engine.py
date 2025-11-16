@@ -171,22 +171,42 @@ User Query: {user_query}"""
             sources = []
             grounding_metadata = None
             
-            if response.candidates and len(response.candidates) > 0:
-                candidate = response.candidates[0]
-                grounding_metadata = candidate.grounding_metadata
-                
-                if grounding_metadata and grounding_metadata.grounding_chunks:
-                    # Extract unique source titles
-                    seen_sources = set()
-                    for chunk in grounding_metadata.grounding_chunks:
-                        if hasattr(chunk, 'retrieved_context'):
-                            source_title = chunk.retrieved_context.title
-                            if source_title and source_title not in seen_sources:
-                                sources.append({
-                                    'title': source_title,
-                                    'uri': getattr(chunk.retrieved_context, 'uri', None)
-                                })
-                                seen_sources.add(source_title)
+            if USE_NEW_SDK:
+                # New SDK grounding metadata extraction
+                if response.candidates and len(response.candidates) > 0:
+                    candidate = response.candidates[0]
+                    grounding_metadata = candidate.grounding_metadata
+                    
+                    if grounding_metadata and grounding_metadata.grounding_chunks:
+                        # Extract unique source titles
+                        seen_sources = set()
+                        for chunk in grounding_metadata.grounding_chunks:
+                            if hasattr(chunk, 'retrieved_context'):
+                                source_title = chunk.retrieved_context.title
+                                source_uri = getattr(chunk.retrieved_context, 'uri', None)
+                                if source_title and source_title not in seen_sources:
+                                    sources.append({
+                                        'title': source_title,
+                                        'uri': source_uri
+                                    })
+                                    seen_sources.add(source_title)
+            else:
+                # Legacy SDK - try to extract grounding if available
+                if hasattr(response, 'candidates') and response.candidates:
+                    candidate = response.candidates[0]
+                    if hasattr(candidate, 'grounding_metadata'):
+                        grounding_metadata = candidate.grounding_metadata
+                        if hasattr(grounding_metadata, 'grounding_chunks'):
+                            seen_sources = set()
+                            for chunk in grounding_metadata.grounding_chunks:
+                                if hasattr(chunk, 'retrieved_context'):
+                                    source_title = chunk.retrieved_context.title
+                                    if source_title and source_title not in seen_sources:
+                                        sources.append({
+                                            'title': source_title,
+                                            'uri': None
+                                        })
+                                        seen_sources.add(source_title)
             
             logger.info(f"✓ Query processed successfully, {len(sources)} sources found")
             
