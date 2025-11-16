@@ -20,10 +20,15 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 CORS(app)  # Enable CORS for frontend communication
 
-# Configuration
-API_KEY = os.getenv('GEMINI_API_KEY', 'AIzaSyAvSB3HkGc7gN0nT4EbJU6NZzvL7FMxg_I')
-STORE_ID = os.getenv('STORE_ID', 'fileSearchStores/flusso-complete-knowledge-b-n8g5l5u765nh')
+# Configuration - USE ENVIRONMENT VARIABLES ONLY
+API_KEY = os.getenv('GEMINI_API_KEY')
+STORE_ID = os.getenv('STORE_ID')
 FRONTEND_PATH = Path(__file__).parent.parent / 'frontend'
+
+if not API_KEY:
+    raise ValueError("GEMINI_API_KEY environment variable is required")
+if not STORE_ID:
+    raise ValueError("STORE_ID environment variable is required")
 
 # Initialize query engine
 query_engine = None

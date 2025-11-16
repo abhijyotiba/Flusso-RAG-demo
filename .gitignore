@@ -27,7 +27,8 @@ wheels/
 .installed.cfg
 *.egg
 
-# Environment
+# Environment variables (NEVER commit these!)
+.env
 .env.local
 .env.*.local
 
