@@ -6,12 +6,14 @@ import os
 import logging
 from typing import Dict, List, Optional
 
+# Try to import the new SDK first, then fall back to old SDK
 try:
     from google import genai
     from google.genai import types
-except ImportError:
-    import google.generativeai as genai
-    from google.generativeai import types
+    USE_NEW_SDK = True
+except (ImportError, AttributeError):
+    import google.generativeai as genai_old
+    USE_NEW_SDK = False
 
 # Configure logging
 logging.basicConfig(
@@ -42,9 +44,15 @@ class FlussoQueryEngine:
         self.api_key = api_key
         self.store_id = store_id
         
-        # Initialize Gemini client
+        # Initialize Gemini client based on SDK version
         try:
-            self.client = genai.Client(api_key=api_key)
+            if USE_NEW_SDK:
+                self.client = genai.Client(api_key=api_key)
+                logger.info("✓ Using new Gemini SDK")
+            else:
+                genai_old.configure(api_key=api_key)
+                self.client = None  # Old SDK doesn't use client
+                logger.info("✓ Using legacy Gemini SDK")
             logger.info("✓ Gemini client initialized successfully")
         except Exception as e:
             logger.error(f"Failed to initialize Gemini client: {e}")
@@ -58,6 +66,7 @@ class FlussoQueryEngine:
         logger.info(f"✓ Query engine initialized")
         logger.info(f"  Model: {self.model_name}")
         logger.info(f"  Store ID: {self.store_id}")
+        logger.info(f"  SDK Version: {'New' if USE_NEW_SDK else 'Legacy'}")
     
     def _build_system_instruction(self) -> str:
         """Build comprehensive system instruction for the AI"""
@@ -127,20 +136,33 @@ class FlussoQueryEngine:
 
 User Query: {user_query}"""
             
-            # Generate response using File Search (following official documentation pattern)
-            response = self.client.models.generate_content(
-                model=self.model_name,
-                contents=full_prompt,
-                config=types.GenerateContentConfig(
-                    tools=[types.Tool(
-                        file_search=types.FileSearch(
-                            file_search_store_names=[self.store_id]
-                        )
-                    )],
-                    temperature=temp,
-                    top_p=top_p_val,
+            if USE_NEW_SDK:
+                # New SDK with File Search
+                from google.genai import types
+                response = self.client.models.generate_content(
+                    model=self.model_name,
+                    contents=full_prompt,
+                    config=types.GenerateContentConfig(
+                        tools=[types.Tool(
+                            file_search=types.FileSearch(
+                                file_search_store_names=[self.store_id]
+                            )
+                        )],
+                        temperature=temp,
+                        top_p=top_p_val,
+                    )
                 )
-            )
+            else:
+                # Legacy SDK - basic generation without file search
+                logger.warning("Using legacy SDK - File Search not available, using basic generation")
+                model = genai_old.GenerativeModel(self.model_name)
+                response = model.generate_content(
+                    full_prompt,
+                    generation_config={
+                        'temperature': temp,
+                        'top_p': top_p_val,
+                    }
+                )
             
             # Extract answer text
             answer = response.text if response.text else "No response generated"
