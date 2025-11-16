@@ -5,8 +5,13 @@ Handles queries to Gemini API using File Search with the knowledge base store
 import os
 import logging
 from typing import Dict, List, Optional
-from google import genai
-from google.genai import types
+
+try:
+    from google import genai
+    from google.genai import types
+except ImportError:
+    import google.generativeai as genai
+    from google.generativeai import types
 
 # Configure logging
 logging.basicConfig(

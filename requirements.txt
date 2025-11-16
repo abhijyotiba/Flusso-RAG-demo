@@ -1,6 +1,6 @@
 # Flusso RAG Demo - Requirements
 
-# Core Dependencies
+# Core Dependencies (install google-generativeai first to avoid namespace conflicts)
 google-generativeai==0.8.5
 
 # Web Framework
@@ -10,3 +10,6 @@ gunicorn==21.2.0
 
 # Utilities
 python-dotenv==1.0.0
+
+# Explicitly install protobuf compatible version
+protobuf==4.25.3
