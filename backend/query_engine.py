@@ -123,19 +123,20 @@ class FlussoQueryEngine:
 
 User Query: {user_query}"""
             
-            # Generate response using File Search (following official documentation pattern)
+            # Generate response using File Search
+            # Using dictionary syntax for compatibility with google-genai 0.3.0
             response = self.client.models.generate_content(
                 model=self.model_name,
                 contents=full_prompt,
-                config=types.GenerateContentConfig(
-                    tools=[types.Tool(
-                        file_search=types.FileSearch(
-                            file_search_store_names=[self.store_id]
-                        )
-                    )],
-                    temperature=temp,
-                    top_p=top_p_val,
-                )
+                config={
+                    'tools': [{
+                        'file_search': {
+                            'file_search_store_names': [self.store_id]
+                        }
+                    }],
+                    'temperature': temp,
+                    'top_p': top_p_val,
+                }
             )
             
             # Extract answer text
