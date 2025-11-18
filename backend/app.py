@@ -114,6 +114,7 @@ def api_query():
         # Extract optional parameters
         temperature = data.get('temperature')
         top_p = data.get('top_p')
+        model = data.get('model')
         
         # Validate parameters if provided
         if temperature is not None:
@@ -138,11 +139,20 @@ def api_query():
                     'error': 'Top_p must be a number between 0.0 and 1.0'
                 }), 400
         
+        # Validate model if provided
+        allowed_models = ['gemini-2.5-flash', 'gemini-2.5-pro-002']
+        if model is not None and model not in allowed_models:
+            return jsonify({
+                'success': False,
+                'error': f'Model must be one of: {", ".join(allowed_models)}'
+            }), 400
+        
         # Process query
         logger.info(f"API Query received: {user_query[:100]}...")
         result = query_engine.query(
             user_query=user_query,
             temperature=temperature,
+            model=model,
             top_p=top_p
         )
         

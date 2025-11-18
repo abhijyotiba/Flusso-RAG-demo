@@ -89,7 +89,8 @@ class FlussoQueryEngine:
         user_query: str,
         temperature: Optional[float] = None,
         top_p: Optional[float] = None,
-        max_tokens: Optional[int] = None
+        max_tokens: Optional[int] = None,
+        model: Optional[str] = None
     ) -> Dict:
         """
         Process a user query and return results
@@ -99,6 +100,7 @@ class FlussoQueryEngine:
             temperature: Model temperature (0.0-1.0), default 0.3
             top_p: Top-p sampling parameter, default 0.9
             max_tokens: Maximum tokens in response, default None (model default)
+            model: Model to use (gemini-2.5-flash or gemini-2.5-pro-002), default gemini-2.5-flash
             
         Returns:
             Dictionary with answer, sources, and metadata
@@ -111,6 +113,7 @@ class FlussoQueryEngine:
         # Use provided parameters or defaults
         temp = temperature if temperature is not None else self.default_temperature
         top_p_val = top_p if top_p is not None else self.default_top_p
+        model_to_use = model if model is not None else self.model_name
         
         try:
             # Build the prompt with system instruction embedded
@@ -122,9 +125,11 @@ User Query: {user_query}"""
             import time
             start_time = time.time()
             
+            logger.info(f"Using model: {model_to_use}")
+            
             # Generate response using File Search (following official documentation pattern)
             response = self.client.models.generate_content(
-                model=self.model_name,
+                model=model_to_use,
                 contents=full_prompt,
                 config=types.GenerateContentConfig(
                     tools=[types.Tool(
@@ -174,7 +179,7 @@ User Query: {user_query}"""
                 'sources': sources,
                 'source_count': len(sources),
                 'metadata': {
-                    'model': self.model_name,
+                    'model': model_to_use,
                     'temperature': temp,
                     'top_p': top_p_val,
                     'has_grounding': grounding_metadata is not None
