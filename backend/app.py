@@ -140,7 +140,7 @@ def api_query():
                 }), 400
         
         # Validate model if provided
-        allowed_models = ['gemini-2.5-flash', 'gemini-2.5-pro-002']
+        allowed_models = ['gemini-2.5-flash', 'gemini-2.5-pro']
         if model is not None and model not in allowed_models:
             return jsonify({
                 'success': False,

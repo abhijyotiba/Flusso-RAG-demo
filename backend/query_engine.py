@@ -100,7 +100,7 @@ class FlussoQueryEngine:
             temperature: Model temperature (0.0-1.0), default 0.3
             top_p: Top-p sampling parameter, default 0.9
             max_tokens: Maximum tokens in response, default None (model default)
-            model: Model to use (gemini-2.5-flash or gemini-2.5-pro-002), default gemini-2.5-flash
+            model: Model to use (gemini-2.5-flash or gemini-2.5-pro), default gemini-2.5-flash
             
         Returns:
             Dictionary with answer, sources, and metadata
